@@ -1,0 +1,23 @@
+{
+  "appSelected": {
+    "appId": "5765880207856184049",
+    "appName": "生活账单",
+    "deviceTypes": [
+      {
+        "appAdapters": "",
+        "deviceType": 4
+      },
+      {
+        "appAdapters": "",
+        "deviceType": 5
+      }
+    ],
+    "enableSites": "CN",
+    "installationFree": 0,
+    "packageType": 7,
+    "projectId": "461323198429067249",
+    "projectName": "生活账单",
+    "siteId": "CN"
+  },
+  "teamId": "80086000028487376"
+}
