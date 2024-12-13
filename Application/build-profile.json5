@@ -1,6 +1,20 @@
 {
   "app": {
-    "signingConfigs": [],
+    "signingConfigs": [
+      {
+        "name": "default",
+        "type": "HarmonyOS",
+        "material": {
+          "storePassword": "0000001AAD61C61BACD6DE2590AA33DE1092C7E2654863751BB2D33578AED2735DC81C642E0083A7CFB6",
+          "certpath": "D:/key/LivingBills/LivingBills_debug.cer",
+          "keyAlias": "LivingBills_debug",
+          "keyPassword": "0000001ACD4B56FDE90E7FFB1AE364A5A7B0E236F59D57DAAC5BA58724D34E322D742DDAC532F9276E0C",
+          "profile": "D:/key/LivingBills/LivingBills_debugDebug.p7b",
+          "signAlg": "SHA256withECDSA",
+          "storeFile": "D:/key/LivingBills/LivingBills_debug.p12"
+        }
+      }
+    ],
     "products": [
       {
         "name": "default",
@@ -27,7 +41,7 @@
   "modules": [
     {
       "name": "default",
-      "srcPath": "./default",
+      "srcPath": "./products/default",
       "targets": [
         {
           "name": "default",
@@ -36,6 +50,10 @@
           ]
         }
       ]
+    },
+    {
+      "name": "bills",
+      "srcPath": "./features/bills",
     }
   ]
 }

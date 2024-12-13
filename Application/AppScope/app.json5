@@ -1,7 +1,7 @@
 {
   "app": {
     "bundleName": "qywang.living.bills",
-    "vendor": "example",
+    "vendor": "个人开发者：王钦谕",
     "versionCode": 1000000,
     "versionName": "1.0.0",
     "icon": "$media:app_icon",

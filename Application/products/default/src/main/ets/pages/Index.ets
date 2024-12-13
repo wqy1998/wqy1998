@@ -1,0 +1,72 @@
+import { router } from '@kit.ArkUI';
+import PayApp from '../startup/PayApp';
+import { ArrayList } from '@kit.ArkTS';
+import PayAccount from '../startup/PayAccount';
+import Classification from '../startup/Classification';
+import { SymbolGlyphModifier } from '@kit.ArkUI';
+import { BillsPage } from '@livingbills/bills';
+
+@Entry
+@Component
+struct Index {
+  @State createTime: string = ''
+  @State lastSignInTime: string = ''
+  @StorageLink("classificationList") classificationList: ArrayList<Classification> = new ArrayList<Classification>()
+  @StorageLink("payAppList") payAppList: ArrayList<PayApp> = new ArrayList<PayApp>()
+  @StorageLink("payAccountList") payAccountList: ArrayList<PayAccount> = new ArrayList<PayAccount>()
+
+  @Builder
+  homeButton(title: Resource, description: Resource, routeName: string) {
+    Button({ type: ButtonType.Normal, stateEffect: true }) {
+      Column() {
+        Text(title)
+          .fontSize($r('app.float.body_font_size'))
+          .margin({ bottom: 5, top: 5 })
+          .fontWeight(FontWeight.Bold)
+        Text(description)
+          .textAlign(TextAlign.Center)
+          .fontSize($r('app.float.body_font_size'))
+          .margin({ bottom: 5 })
+      }
+      .width('100%')
+    }
+    .borderRadius(4)
+    .margin(10)
+    .borderWidth(1)
+    .borderColor($r('app.color.body_color'))
+    .fontColor($r('app.color.body_color'))
+    .backgroundColor($r('app.color.start_window_background'))
+    .width('96%')
+    .onClick(async () => {
+      let params: Record<string, Resource> = { 'title': title }
+      router.pushUrl({ url: routeName, params });
+    })
+  }
+
+  build() {
+    Tabs({barPosition:BarPosition.End}) {
+      TabContent() {
+        BillsPage()
+          .width('90%')
+      }
+      .tabBar(new BottomTabBarStyle({
+        normal: new SymbolGlyphModifier($r('sys.symbol.yuansign_coupon_fill'))
+      },'账单'))
+
+      TabContent() {
+
+      }
+      .tabBar(new BottomTabBarStyle({
+        normal: new SymbolGlyphModifier($r('sys.symbol.yuansign_circle_and_hand_fill'))
+      },'统计'))
+
+      TabContent() {
+
+      }
+      .tabBar(new BottomTabBarStyle({
+        normal: new SymbolGlyphModifier($r('sys.symbol.person_crop_circle_fill_1'))
+      },'我的'))
+    }
+    .barBackgroundBlurStyle(BlurStyle.COMPONENT_ULTRA_THIN)
+  }
+}

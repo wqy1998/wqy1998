@@ -1,0 +1,20 @@
+{
+  "startupTasks": [
+    {
+      "name": "CreateDB",
+      "srcEntry": "./ets/startup/CreateDB.ets",
+      "runOnThread": "taskPool",
+      "waitOnMainThread": true
+    },
+    {
+      "name": "QueryBills",
+      "srcEntry": "./ets/startup/QueryDB.ets",
+      "dependencies": [
+        "CreateDB"
+      ],
+      "runOnThread": "taskPool",
+      "waitOnMainThread": true
+    }
+  ],
+  "configEntry": "./ets/startup/StartupConfig.ets"
+}

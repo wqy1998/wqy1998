@@ -15,8 +15,8 @@
         "name": "DefaultAbility",
         "srcEntry": "./ets/defaultability/DefaultAbility.ets",
         "description": "$string:defaultability_desc",
-        "icon": "$media:layered_image",
-        "label": "$string:defaultability_label",
+//        "icon": "$media:layered_image",
+//        "label": "$string:defaultability_label",
         "startWindowIcon": "$media:startIcon",
         "startWindowBackground": "$color:white",
         "exported": true,
@@ -36,6 +36,7 @@
       {
         "name": "ohos.permission.INTERNET"
       }
-    ]
+    ],
+//    "appStartup": "$profile:startup_config"
   }
 }
