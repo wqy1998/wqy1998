@@ -1,8 +1,8 @@
 import { router } from '@kit.ArkUI';
-import PayApp from '../startup/PayApp';
+import PayApp from '@livingbills/bills/src/main/ets/model/PayApp';
 import { ArrayList } from '@kit.ArkTS';
-import PayAccount from '../startup/PayAccount';
-import Classification from '../startup/Classification';
+import PayAccount from '@livingbills/bills/src/main/ets/model/PayAccount';
+import Classification from '@livingbills/bills/src/main/ets/model/Classification';
 import { SymbolGlyphModifier } from '@kit.ArkUI';
 import { BillsPage } from '@livingbills/bills';
 

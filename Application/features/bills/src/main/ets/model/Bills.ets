@@ -14,6 +14,16 @@ export default class Bills{
     return this._cost
   }
 
+  private _type: number
+
+  public set type(value: number) {
+    this._type = value
+  }
+
+  public get type(): number {
+    return this._type
+  }
+
   private _payApp: string
 
   public set payApp(value: string) {
@@ -114,10 +124,11 @@ export default class Bills{
     return this._notes
   }
 
-  constructor(id: number, cost: number, payApp: string, payAccount: string, classification: string, createTime: Date,
-    payTime: Date, year: number, month: number, date: number, day: number, notes: string) {
+  constructor(id: number, cost: number, type: number, payApp: string, payAccount: string, classification: string,
+    createTime: Date, payTime: Date, year: number, month: number, date: number, day: number, notes: string) {
     this._id = id
     this._cost = cost
+    this._type = type
     this._payApp = payApp
     this._payAccount = payAccount
     this._classification = classification

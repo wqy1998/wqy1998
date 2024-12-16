@@ -1,13 +1,12 @@
-import { abilityAccessCtrl, AbilityConstant, common, PermissionRequestResult, UIAbility, Want } from '@kit.AbilityKit';
+import { abilityAccessCtrl, AbilityConstant, PermissionRequestResult, UIAbility, Want } from '@kit.AbilityKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { AppStorageV2, window } from '@kit.ArkUI';
-import { relationalStore } from '@kit.ArkData';
-import { BusinessError } from '@kit.BasicServicesKit';
+import { window } from '@kit.ArkUI';
+import { relationalStore, ValuesBucket } from '@kit.ArkData';
 import { ArrayList } from '@kit.ArkTS';
-import PayApp from '../startup/PayApp';
+import PayApp from '@livingbills/bills/src/main/ets/model/PayApp';
 import Bills from '@livingbills/bills/src/main/ets/model/Bills';
-import Classification from '../startup/Classification';
-import PayAccount from '../startup/PayAccount';
+import Classification from '@livingbills/bills/src/main/ets/model/Classification';
+import PayAccount from '@livingbills/bills/src/main/ets/model/PayAccount';
 
 let rdb: relationalStore.RdbStore | undefined = undefined
 
@@ -73,7 +72,7 @@ export default class EntryAbility extends UIAbility {
     hilog.info(0x0000, 'testTag', `Go to createTable().`);
 
     const SQL_CREATE_BILLS =
-      'CREATE TABLE IF NOT EXISTS BILLS (ID INTEGER PRIMARY KEY AUTOINCREMENT, COST REAL NOT NULL, PAY_APP TEXT NOT NULL, PAY_ACCOUNT TEXT NOT NULL, CLASSIFICATION TEXT NOT NULL, CREATE_TIME DATETIME NOT NULL, PAY_TIME DATETIME NOT NULL, YEAR INTEGER NOT NULL, MONTH INTEGER NOT NULL,DATE INTEGER NOT NULL, DAY INTEGER NOT NULL, NOTES TEXT);';
+      'CREATE TABLE IF NOT EXISTS BILLS (ID INTEGER PRIMARY KEY AUTOINCREMENT, COST REAL NOT NULL, TYPE INTEGER, PAY_APP TEXT NOT NULL, PAY_ACCOUNT TEXT NOT NULL, CLASSIFICATION TEXT, CREATE_TIME DATETIME NOT NULL, PAY_TIME DATETIME NOT NULL, YEAR INTEGER NOT NULL, MONTH INTEGER NOT NULL,DATE INTEGER NOT NULL, DAY INTEGER NOT NULL, NOTES TEXT);';
     const SQL_CREATE_CLASSIFICATION =
       'CREATE TABLE IF NOT EXISTS CLASSIFICATION (ID INTEGER PRIMARY KEY AUTOINCREMENT, NAME TEXT UNIQUE NOT NULL);';
     const SQL_CREATE_PAY_APP =
@@ -86,8 +85,9 @@ export default class EntryAbility extends UIAbility {
       // 创建账单表
       await rdb.executeSql(SQL_CREATE_BILLS);
       // 初始化插入账单表
-      const first: relationalStore.ValuesBucket = {
+      const firstBill: relationalStore.ValuesBucket = {
         COST: 20.5,
+        TYPE: 1,
         PAY_APP: '支付宝',
         PAY_ACCOUNT: '123',
         CLASSIFICATION: '456',
@@ -99,9 +99,24 @@ export default class EntryAbility extends UIAbility {
         DAY: new Date().getDay(),
         NOTES: '789'
       }
-      rdb.insertSync("BILLS", first)
+      rdb.insertSync("BILLS", firstBill)
       // 创建账单分类表
       await rdb.executeSql(SQL_CREATE_CLASSIFICATION);
+      // 初始化插入分类表
+      const firstClassification1: relationalStore.ValuesBucket = {
+        NAME: '早餐'
+      }
+      const firstClassification2: relationalStore.ValuesBucket = {
+        NAME: '午餐'
+      }
+      const firstClassification3: relationalStore.ValuesBucket = {
+        NAME: '晚餐'
+      }
+      const firstClassification4: relationalStore.ValuesBucket = {
+        NAME: '交通'
+      }
+      let claValueBuckets = new Array(firstClassification1,firstClassification2,firstClassification3,firstClassification4)
+      rdb.batchInsertSync("CLASSIFICATION", claValueBuckets)
       // 创建支付APP表
       await rdb.executeSql(SQL_CREATE_PAY_APP);
       // 初始化插入支付APP表
@@ -115,6 +130,11 @@ export default class EntryAbility extends UIAbility {
       rdb.batchInsertSync("PAY_APP", valueBuckets);
       // 创建支付账户表
       await rdb.executeSql(SQL_CREATE_PAY_ACCOUNT);
+      // 初始化插入支付账户表
+      const firstPayAccount: relationalStore.ValuesBucket = {
+        NAME: '默认账户'
+      }
+      rdb.insertSync("PAY_ACCOUNT", firstPayAccount)
       // 设置数据库的版本，入参为大于0的整数
       rdb.version = 1;
     }
@@ -122,13 +142,13 @@ export default class EntryAbility extends UIAbility {
 
     // 获取当前时间
     let time = new Date();
-    AppStorage.setOrCreate('today',time)
+    AppStorage.setOrCreate('today', time)
     let year = time.getFullYear();
-    AppStorage.setOrCreate('year',year)
+    AppStorage.setOrCreate('year', year)
     let month = time.getMonth();
-    AppStorage.setOrCreate('month',month)
+    AppStorage.setOrCreate('month', month)
     let date = time.getDate();
-    AppStorage.setOrCreate('date',date)
+    AppStorage.setOrCreate('date', date)
 
     // 查询账单表
     // 创建查询数据的关系谓词
@@ -139,6 +159,7 @@ export default class EntryAbility extends UIAbility {
     while (billsResultSet.goToNextRow()) {
       billsList.push(new Bills(billsResultSet.getLong(billsResultSet.getColumnIndex("ID")),
         billsResultSet.getDouble(billsResultSet.getColumnIndex("COST")),
+        billsResultSet.getLong(billsResultSet.getColumnIndex("TYPE")),
         billsResultSet.getString(billsResultSet.getColumnIndex("PAY_APP")),
         billsResultSet.getString(billsResultSet.getColumnIndex("PAY_ACCOUNT")),
         billsResultSet.getString(billsResultSet.getColumnIndex("CLASSIFICATION")),
@@ -181,8 +202,8 @@ export default class EntryAbility extends UIAbility {
     let payAccountList: ArrayList<PayAccount> = new ArrayList()
     while (payAccountResultSet.goToNextRow()) {
       payAccountList.add(new PayAccount(payAccountResultSet.getLong(payAccountResultSet.getColumnIndex("ID")),
-        payAppResultSet.getString(payAccountResultSet.getColumnIndex("NAME")),
-        payAppResultSet.getDouble(payAccountResultSet.getColumnIndex("AMOUNT"))))
+        payAccountResultSet.getString(payAccountResultSet.getColumnIndex("NAME")),
+        payAccountResultSet.getDouble(payAccountResultSet.getColumnIndex("AMOUNT"))))
     }
     AppStorage.setOrCreate("payAccountList", payAccountList);
   }
