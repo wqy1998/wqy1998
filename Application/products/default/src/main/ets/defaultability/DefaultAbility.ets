@@ -1,7 +1,7 @@
 import { abilityAccessCtrl, AbilityConstant, PermissionRequestResult, UIAbility, Want } from '@kit.AbilityKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { window } from '@kit.ArkUI';
-import { relationalStore, ValuesBucket } from '@kit.ArkData';
+import { relationalStore } from '@kit.ArkData';
 import { ArrayList } from '@kit.ArkTS';
 import PayApp from '@livingbills/bills/src/main/ets/model/PayApp';
 import Bills from '@livingbills/bills/src/main/ets/model/Bills';
@@ -67,18 +67,17 @@ export default class EntryAbility extends UIAbility {
       customDir: 'bill',
       allowRebuild: true
     }
-    rdb = await relationalStore.getRdbStore(this.context.getApplicationContext(), storeConfig);
-    AppStorage.setOrCreate('billsRdb', rdb);
+    rdb = await relationalStore.getRdbStore(this.context, storeConfig)
     hilog.info(0x0000, 'testTag', `Go to createTable().`);
 
     const SQL_CREATE_BILLS =
-      'CREATE TABLE IF NOT EXISTS BILLS (ID INTEGER PRIMARY KEY AUTOINCREMENT, COST REAL NOT NULL, TYPE INTEGER, PAY_APP TEXT NOT NULL, PAY_ACCOUNT TEXT NOT NULL, CLASSIFICATION TEXT, CREATE_TIME DATETIME NOT NULL, PAY_TIME DATETIME NOT NULL, YEAR INTEGER NOT NULL, MONTH INTEGER NOT NULL,DATE INTEGER NOT NULL, DAY INTEGER NOT NULL, NOTES TEXT);';
+      'CREATE TABLE IF NOT EXISTS BILLS (ID INTEGER PRIMARY KEY AUTOINCREMENT, COST REAL NOT NULL, TYPE INTEGER NOT NULL CHECK(TYPE >= 0 AND TYPE <= 2), PAY_APP INTEGER, PAY_ACCOUNT INTEGER, CLASSIFICATION INTEGER, CREATE_TIME DATETIME NOT NULL, PAY_TIME DATETIME NOT NULL, YEAR INTEGER NOT NULL, MONTH INTEGER NOT NULL,DATE INTEGER NOT NULL, DAY INTEGER NOT NULL, NOTES TEXT);'
     const SQL_CREATE_CLASSIFICATION =
-      'CREATE TABLE IF NOT EXISTS CLASSIFICATION (ID INTEGER PRIMARY KEY AUTOINCREMENT, NAME TEXT UNIQUE NOT NULL);';
+      'CREATE TABLE IF NOT EXISTS CLASSIFICATION (ID INTEGER PRIMARY KEY AUTOINCREMENT, NAME TEXT UNIQUE NOT NULL, CREATE_TIME DATETIME NOT NULL);'
     const SQL_CREATE_PAY_APP =
-      'CREATE TABLE IF NOT EXISTS PAY_APP (ID INTEGER PRIMARY KEY AUTOINCREMENT, NAME TEXT UNIQUE NOT NULL);';
+      'CREATE TABLE IF NOT EXISTS PAY_APP (ID INTEGER PRIMARY KEY AUTOINCREMENT, NAME TEXT UNIQUE NOT NULL, CREATE_TIME DATETIME NOT NULL);'
     const SQL_CREATE_PAY_ACCOUNT =
-      'CREATE TABLE IF NOT EXISTS PAY_ACCOUNT (ID INTEGER PRIMARY KEY AUTOINCREMENT, NAME TEXT UNIQUE NOT NULL, AMOUNT REAL NOT NULL DEFAULT 0);';
+      'CREATE TABLE IF NOT EXISTS PAY_ACCOUNT (ID INTEGER PRIMARY KEY AUTOINCREMENT, NAME TEXT UNIQUE NOT NULL, AMOUNT REAL NOT NULL DEFAULT 0, CREATE_TIME DATETIME NOT NULL);'
     // 当数据库创建时，数据库默认版本为0
     if (rdb && rdb.version === 0) {
       hilog.info(0x0000, 'testTag', `go to excuteSql`);
@@ -88,11 +87,11 @@ export default class EntryAbility extends UIAbility {
       const firstBill: relationalStore.ValuesBucket = {
         COST: 20.5,
         TYPE: 1,
-        PAY_APP: '支付宝',
-        PAY_ACCOUNT: '123',
-        CLASSIFICATION: '456',
-        CREATE_TIME: new Date().toDateString(),
-        PAY_TIME: new Date().toDateString(),
+        PAY_APP: 0,
+        PAY_ACCOUNT: 0,
+        CLASSIFICATION: 0,
+        CREATE_TIME: new Date().toString(),
+        PAY_TIME: new Date().toString(),
         YEAR: new Date().getFullYear(),
         MONTH: new Date().getMonth(),
         DATE: new Date().getDate(),
@@ -104,27 +103,39 @@ export default class EntryAbility extends UIAbility {
       await rdb.executeSql(SQL_CREATE_CLASSIFICATION);
       // 初始化插入分类表
       const firstClassification1: relationalStore.ValuesBucket = {
-        NAME: '早餐'
+        NAME: '早餐',
+        CREATE_TIME: new Date().toString()
       }
       const firstClassification2: relationalStore.ValuesBucket = {
-        NAME: '午餐'
+        NAME: '午餐',
+        CREATE_TIME: new Date().toString()
       }
       const firstClassification3: relationalStore.ValuesBucket = {
-        NAME: '晚餐'
+        NAME: '晚餐',
+        CREATE_TIME: new Date().toString()
       }
       const firstClassification4: relationalStore.ValuesBucket = {
-        NAME: '交通'
+        NAME: '交通',
+        CREATE_TIME: new Date().toString()
       }
-      let claValueBuckets = new Array(firstClassification1,firstClassification2,firstClassification3,firstClassification4)
+      const firstClassification5: relationalStore.ValuesBucket = {
+        NAME: '平账',
+        CREATE_TIME: new Date().toString()
+      }
+      let claValueBuckets =
+        new Array(firstClassification1, firstClassification2, firstClassification3, firstClassification4,
+          firstClassification5)
       rdb.batchInsertSync("CLASSIFICATION", claValueBuckets)
       // 创建支付APP表
       await rdb.executeSql(SQL_CREATE_PAY_APP);
       // 初始化插入支付APP表
       const ZFB: relationalStore.ValuesBucket = {
-        NAME: '支付宝'
+        NAME: '支付宝',
+        CREATE_TIME: new Date().toString(),
       };
       const WeChat: relationalStore.ValuesBucket = {
-        NAME: '微信'
+        NAME: '微信',
+        CREATE_TIME: new Date().toString(),
       };
       let valueBuckets = new Array(ZFB, WeChat);
       rdb.batchInsertSync("PAY_APP", valueBuckets);
@@ -132,7 +143,8 @@ export default class EntryAbility extends UIAbility {
       await rdb.executeSql(SQL_CREATE_PAY_ACCOUNT);
       // 初始化插入支付账户表
       const firstPayAccount: relationalStore.ValuesBucket = {
-        NAME: '默认账户'
+        NAME: '默认账户',
+        CREATE_TIME: new Date().toString(),
       }
       rdb.insertSync("PAY_ACCOUNT", firstPayAccount)
       // 设置数据库的版本，入参为大于0的整数
@@ -153,18 +165,18 @@ export default class EntryAbility extends UIAbility {
     // 查询账单表
     // 创建查询数据的关系谓词
     let billsPredicates = new relationalStore.RdbPredicates("BILLS");
-    billsPredicates.equalTo("YEAR", year).equalTo("MONTH", month).equalTo("DATE", date);
+    billsPredicates.equalTo("YEAR", year).equalTo("MONTH", month).orderByDesc("PAY_TIME")
     let billsResultSet = rdb.querySync(billsPredicates);
     let billsList: Array<Bills> = new Array()
     while (billsResultSet.goToNextRow()) {
       billsList.push(new Bills(billsResultSet.getLong(billsResultSet.getColumnIndex("ID")),
         billsResultSet.getDouble(billsResultSet.getColumnIndex("COST")),
         billsResultSet.getLong(billsResultSet.getColumnIndex("TYPE")),
-        billsResultSet.getString(billsResultSet.getColumnIndex("PAY_APP")),
-        billsResultSet.getString(billsResultSet.getColumnIndex("PAY_ACCOUNT")),
-        billsResultSet.getString(billsResultSet.getColumnIndex("CLASSIFICATION")),
-        new Date(billsResultSet.getString(billsResultSet.getColumnIndex("CREATE_TIME"))),
-        new Date(billsResultSet.getString(billsResultSet.getColumnIndex("PAY_TIME"))),
+        billsResultSet.getLong(billsResultSet.getColumnIndex("PAY_APP")),
+        billsResultSet.getLong(billsResultSet.getColumnIndex("PAY_ACCOUNT")),
+        billsResultSet.getLong(billsResultSet.getColumnIndex("CLASSIFICATION")),
+        billsResultSet.getString(billsResultSet.getColumnIndex("CREATE_TIME")),
+        billsResultSet.getString(billsResultSet.getColumnIndex("PAY_TIME")),
         billsResultSet.getLong(billsResultSet.getColumnIndex("YEAR")),
         billsResultSet.getLong(billsResultSet.getColumnIndex("MONTH")),
         billsResultSet.getLong(billsResultSet.getColumnIndex("DATE")),
@@ -178,33 +190,49 @@ export default class EntryAbility extends UIAbility {
     let classificationPredicates = new relationalStore.RdbPredicates("CLASSIFICATION");
     let classificationResultSet = rdb.querySync(classificationPredicates);
     let classificationList: ArrayList<Classification> = new ArrayList()
+    let classificationMap: Map<number, string> = new Map()
     while (classificationResultSet.goToNextRow()) {
       classificationList.add(new Classification(classificationResultSet.getLong(classificationResultSet.getColumnIndex("ID")),
-        classificationResultSet.getString(classificationResultSet.getColumnIndex("NAME"))))
+        classificationResultSet.getString(classificationResultSet.getColumnIndex("NAME")),
+        classificationResultSet.getString(classificationResultSet.getColumnIndex('CREATE_TIME'))))
+      classificationMap.set(classificationResultSet.getLong(classificationResultSet.getColumnIndex("ID")),
+        classificationResultSet.getString(classificationResultSet.getColumnIndex("NAME")))
     }
-    AppStorage.setOrCreate("classificationList", classificationList);
+    AppStorage.setOrCreate("classificationList", classificationList)
+    AppStorage.setOrCreate("classificationMap", classificationMap)
 
     // 查询支付APP表
     let payAppPredicates = new relationalStore.RdbPredicates("PAY_APP");
     let payAppResultSet = rdb.querySync(payAppPredicates);
     hilog.info(0x0000, 'testTag', `payAppResultSet size = ${payAppResultSet.rowCount}`)
     let payAppList: ArrayList<PayApp> = new ArrayList()
+    let payAppMap: Map<number, string> = new Map()
     while (payAppResultSet.goToNextRow()) {
       payAppList.add(new PayApp(payAppResultSet.getLong(payAppResultSet.getColumnIndex("ID")),
-        payAppResultSet.getString(payAppResultSet.getColumnIndex("NAME"))));
+        payAppResultSet.getString(payAppResultSet.getColumnIndex("NAME")),
+        payAppResultSet.getString(payAppResultSet.getColumnIndex('CREATE_TIME'))))
+      payAppMap.set(payAppResultSet.getLong(payAppResultSet.getColumnIndex("ID")),
+        payAppResultSet.getString(payAppResultSet.getColumnIndex("NAME")))
     }
     hilog.info(0x0000, 'testTag', `payAppList size = ${payAppList.length}`);
-    AppStorage.setOrCreate("payAppList", payAppList);
+    AppStorage.setOrCreate("payAppList", payAppList)
+    AppStorage.setOrCreate("payAppMap", payAppMap)
 
     // 查询支付账户表
     let payAccountPredicates = new relationalStore.RdbPredicates("PAY_ACCOUNT");
     let payAccountResultSet = rdb.querySync(payAccountPredicates);
     let payAccountList: ArrayList<PayAccount> = new ArrayList()
+    let payAccountMap: Map<number, string[]> = new Map()
     while (payAccountResultSet.goToNextRow()) {
       payAccountList.add(new PayAccount(payAccountResultSet.getLong(payAccountResultSet.getColumnIndex("ID")),
         payAccountResultSet.getString(payAccountResultSet.getColumnIndex("NAME")),
-        payAccountResultSet.getDouble(payAccountResultSet.getColumnIndex("AMOUNT"))))
+        payAccountResultSet.getDouble(payAccountResultSet.getColumnIndex("AMOUNT")),
+        payAccountResultSet.getString(payAccountResultSet.getColumnIndex('CREATE_TIME'))))
+      payAccountMap.set(payAccountResultSet.getLong(payAccountResultSet.getColumnIndex("ID")),
+        [payAccountResultSet.getString(payAccountResultSet.getColumnIndex("NAME")),
+          payAccountResultSet.getDouble(payAccountResultSet.getColumnIndex("AMOUNT")).toString()])
     }
-    AppStorage.setOrCreate("payAccountList", payAccountList);
+    AppStorage.setOrCreate("payAccountList", payAccountList)
+    AppStorage.setOrCreate("payAccountMap", payAccountMap)
   }
 }

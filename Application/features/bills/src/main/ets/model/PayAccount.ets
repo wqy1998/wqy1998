@@ -25,9 +25,20 @@ export default class PayAccount {
     return this._amount
   }
 
-  constructor(id: number, name: string, amount: number) {
+  private _createTime: string
+
+  public set createTime(value: string) {
+    this._createTime = value
+  }
+
+  public get createTime(): string {
+    return this._createTime
+  }
+
+  constructor(id: number, name: string, amount: number, createTime: string) {
     this._id = id
     this._name = name
     this._amount = amount
+    this._createTime = createTime
   }
 }

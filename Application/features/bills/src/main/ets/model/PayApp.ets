@@ -15,8 +15,19 @@ export default class PayApp {
     return this._name
   }
 
-  constructor(id: number, name: string) {
+  private _createTime: string
+
+  public set createTime(value: string) {
+    this._createTime = value
+  }
+
+  public get createTime(): string {
+    return this._createTime
+  }
+
+  constructor(id: number, name: string, createTime: string) {
     this._id = id
     this._name = name
+    this._createTime = createTime
   }
 }

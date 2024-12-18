@@ -1,9 +1,28 @@
-export default class Bills{
+import { ValuesBucket } from "@kit.ArkData"
+
+export interface BillsValueBucket extends ValuesBucket {
+  COST: number
+  TYPE: number
+  PAY_APP: number
+  PAY_ACCOUNT: number
+  CLASSIFICATION: number
+  CREATE_TIME: string
+  PAY_TIME: string
+  YEAR: number
+  MONTH: number
+  DATE: number
+  DAY: number
+  NOTES: string
+}
+
+@Sendable
+export default class Bills {
   private _id: number
 
   public get id(): number {
     return this._id
   }
+
   private _cost: number
 
   public set cost(value: number) {
@@ -24,53 +43,53 @@ export default class Bills{
     return this._type
   }
 
-  private _payApp: string
+  private _payApp: number
 
-  public set payApp(value: string) {
+  public set payApp(value: number) {
     this._payApp = value
   }
 
-  public get payApp(): string {
+  public get payApp(): number {
     return this._payApp
   }
 
-  private _payAccount: string
+  private _payAccount: number
 
-  public set payAccount(value: string) {
+  public set payAccount(value: number) {
     this._payAccount = value
   }
 
-  public get payAccount(): string {
+  public get payAccount(): number {
     return this._payAccount
   }
 
-  private _classification: string
+  private _classification: number
 
-  public set classification(value: string) {
+  public set classification(value: number) {
     this._classification = value
   }
 
-  public get classification(): string {
+  public get classification(): number {
     return this._classification
   }
 
-  private _createTime: Date
+  private _createTime: string
 
-  public set createTime(value: Date) {
+  public set createTime(value: string) {
     this._createTime = value
   }
 
-  public get createTime(): Date {
+  public get createTime(): string {
     return this._createTime
   }
 
-  private _payTime: Date
+  private _payTime: string
 
-  public set payTime(value: Date) {
+  public set payTime(value: string) {
     this._payTime = value
   }
 
-  public get payTime(): Date {
+  public get payTime(): string {
     return this._payTime
   }
 
@@ -124,8 +143,8 @@ export default class Bills{
     return this._notes
   }
 
-  constructor(id: number, cost: number, type: number, payApp: string, payAccount: string, classification: string,
-    createTime: Date, payTime: Date, year: number, month: number, date: number, day: number, notes: string) {
+  constructor(id: number, cost: number, type: number, payApp: number, payAccount: number, classification: number,
+    createTime: string, payTime: string, year: number, month: number, date: number, day: number, notes: string) {
     this._id = id
     this._cost = cost
     this._type = type

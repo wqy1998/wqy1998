@@ -44,28 +44,28 @@ struct Index {
   }
 
   build() {
-    Tabs({barPosition:BarPosition.End}) {
+    Tabs({ barPosition: BarPosition.End }) {
       TabContent() {
         BillsPage()
-          .width('90%')
       }
+      .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
       .tabBar(new BottomTabBarStyle({
         normal: new SymbolGlyphModifier($r('sys.symbol.yuansign_coupon_fill'))
-      },'账单'))
+      }, '账单'))
 
       TabContent() {
 
       }
       .tabBar(new BottomTabBarStyle({
         normal: new SymbolGlyphModifier($r('sys.symbol.yuansign_circle_and_hand_fill'))
-      },'统计'))
+      }, '统计'))
 
       TabContent() {
 
       }
       .tabBar(new BottomTabBarStyle({
         normal: new SymbolGlyphModifier($r('sys.symbol.person_crop_circle_fill_1'))
-      },'我的'))
+      }, '我的'))
     }
     .barBackgroundBlurStyle(BlurStyle.COMPONENT_ULTRA_THIN)
   }
