@@ -1,14 +1,14 @@
-import Bills, { BillsValueBucket } from "../model/Bills";
-import { SegmentButton, SegmentButtonOptions } from "@ohos.arkui.advanced.SegmentButton";
+import Bills, { BillsValueBucket } from "@livingbills/rdbcrud/src/main/ets/model/Bills";
+import { SegmentButtonOptions } from "@ohos.arkui.advanced.SegmentButton";
 import { intl } from "@kit.LocalizationKit";
 import { promptAction, SymbolGlyphModifier } from "@kit.ArkUI";
 import { BusinessError } from "@kit.BasicServicesKit";
 import { hilog } from "@kit.PerformanceAnalysisKit";
-import Classification from "../model/Classification";
-import PayApp from "../model/PayApp";
-import PayAccount from "../model/PayAccount";
-import { relationalStore } from "@kit.ArkData";
+import Classification from "@livingbills/rdbcrud/src/main/ets/model/Classification";
+import PayApp from "@livingbills/rdbcrud/src/main/ets/model/PayApp";
+import PayAccount from "@livingbills/rdbcrud/src/main/ets/model/PayAccount";
 import { taskpool } from "@kit.ArkTS";
+import { insertBill, queryBill } from "@livingbills/rdbcrud";
 
 @Component
 export struct BillsPage {
@@ -16,10 +16,14 @@ export struct BillsPage {
   @StorageLink("classificationList") classificationList: Array<Classification> = new Array<Classification>()
   @StorageLink("classificationMap") classificationMap: Map<number, string> = new Map()
   @StorageLink("payAppList") payAppList: Array<PayApp> = new Array<PayApp>()
-  @StorageLink("payAppMap") payAppMap: Map<number, string> = new Map()
+  @StorageLink("payAppMap") payAppMap: Map<number, string> = new Map<number, string>()
   @StorageLink("payAccountList") payAccountList: Array<PayAccount> = new Array<PayAccount>()
-  @StorageLink("payAccountMap") payAccountMap: Map<number, string[]> = new Map()
+  @StorageLink("payAccountMap") payAccountMap: Map<number, string[]> = new Map<number, string[]>()
   @StorageLink("today") today: Date = new Date()
+  @StorageLink("currentMonthExpense") currentMonthExpense: number = 0
+  @StorageLink("currentMonthIncome") currentMonthIncome: number = 0
+  @StorageLink("currentDayExpense") currentDayExpense: number = 0
+  @StorageLink("currentDayIncome") currentDayIncome: number = 0
   @StorageProp("year") searchYear: number = this.today.getFullYear()
   @StorageProp("month") searchMonth: number = this.today.getMonth()
   @StorageProp("date") searchDate: number = this.today.getDate()
@@ -36,6 +40,7 @@ export struct BillsPage {
   insertClassification: number = -1
   insertPayApp: number = -1
   insertPayAccount: number = -1
+  insertPayAccountAmount: number = 0
   @State insertTime: Date = new Date()
   @State insertNotes: string = ''
   datefmt = new intl.DateTimeFormat('zh-CN', { dateStyle: 'long' })
@@ -55,52 +60,106 @@ export struct BillsPage {
     Row() {
       Button({ buttonStyle: ButtonStyleMode.NORMAL }) {
         Text() {
-          SymbolSpan($r('sys.symbol.trash'))
+          SymbolSpan($r('sys.symbol.trash_fill'))
         }
-        .fontSize(25)
-        .fontColor($r('sys.color.ohos_id_color_warning'))
-        .padding(5)
+        .fontSize(20)
+        .fontColor(Color.White)
+        .padding(8)
       }
       .type(ButtonType.Circle)
-      .margin({ right: 5 })
+      .margin({ left: 15 })
+      .backgroundColor($r('sys.color.ohos_id_color_warning'))
 
       Button({ buttonStyle: ButtonStyleMode.NORMAL }) {
         Text() {
-          SymbolSpan($r('sys.symbol.square_and_pencil'))
+          SymbolSpan($r('sys.symbol.square_and_pencil_fill'))
         }
-        .fontSize(25)
-        .fontColor($r('sys.color.ohos_id_color_text_primary'))
-        .margin(5)
+        .fontSize(20)
+        .fontColor(Color.White)
+        .padding(8)
       }
       .onClick(() => {
         this.scroller.closeAllSwipeActions()
       })
       .type(ButtonType.Circle)
+      .margin({ left: 15 })
+      .backgroundColor('#47CC47')
     }
-    .justifyContent(FlexAlign.SpaceEvenly)
   }
 
   build() {
     Navigation(this.pathInfos) {
       List({ scroller: this.scroller, space: 5 }) {
+        ListItem() {
+          Row() {
+            Column() {
+              Row() {
+                Text('本月支出：')
+                Text(this.currentMonthExpense.toString())
+                  .fontColor($r('sys.color.multi_color_08'))
+                Text('元')
+              }
+              .margin({ bottom: 5 })
+
+              Row() {
+                Text('本月收入：')
+                Text(this.currentMonthIncome.toString())
+                  .fontColor($r('sys.color.multi_color_04'))
+                Text('元')
+              }
+            }
+            .layoutWeight(1)
+
+            Divider()
+              .vertical(true)
+              .color(Color.Black)
+              .height(56)
+            Column() {
+              Row() {
+                Text('今日支出：')
+                Text(this.currentDayExpense.toString())
+                  .fontColor($r('sys.color.multi_color_08'))
+                Text('元')
+              }
+              .margin({ bottom: 5 })
+
+              Row() {
+                Text('今日收入：')
+                Text(this.currentDayIncome.toString())
+                  .fontColor($r('sys.color.multi_color_04'))
+                Text('元')
+              }
+            }
+            .layoutWeight(1)
+          }
+          .borderRadius(12)
+          .backgroundColor($r('sys.color.ohos_id_color_palette_aux1'))
+          .margin({ left: 15, right: 15 })
+        }
+
         ForEach(this.billsList, (item: Bills) => {
-          ListItem({ style: ListItemStyle.CARD }) {
+          ListItem() {
             Row() {
               if (item.date < 10) {
                 Text('0' + item.date.toString())
                   .fontSize(25)
+                  .fontWeight(FontWeight.Medium)
                   .width(30)
-                  .margin({ right: 12 })
+                  .margin({ left: 10, right: 10 })
               } else {
                 Text(item.date.toString())
                   .fontSize(25)
+                  .fontWeight(FontWeight.Medium)
                   .width(30)
-                  .margin({ right: 12 })
+                  .margin({ left: 10, right: 10 })
               }
               Divider()
                 .vertical(true)
               Column() {
                 Row() {
+                  Text(this.classificationMap.get(item.classification))
+                    .fontSize(18)
+                  Blank()
                   if (item.type == 0) {
                     Text('-' + item.cost.toString())
                       .fontSize(20)
@@ -114,48 +173,54 @@ export struct BillsPage {
                       .fontSize(20)
                       .fontColor($r('sys.color.multi_color_11'))
                   }
-                  if (this.payAppMap.has(item.payApp)) {
-                    Text('  |  ')
-                      .fontColor($r('sys.color.ohos_id_color_text_hint'))
-                    Text(this.payAppMap.get(item.payApp))
-                      .fontSize($r('sys.float.ohos_id_text_size_body3'))
-                      .fontColor($r('sys.color.ohos_id_color_text_hint'))
-                  }
                 }
-                .layoutWeight(3)
-                .padding({ left: 5 })
+                .padding({ left: 10, right: 10 })
                 .height(30)
+                .width('100%')
 
+                Divider()
                 Row() {
-                  if (item.notes.trim().length > 0 && this.classificationMap.has(item.classification)) {
-                    Text(new intl.DateTimeFormat('zh-CN',
-                      { timeStyle: 'short', hourCycle: 'h24' }).format(new Date(item.payTime)) + '  |  ' +
-                    this.classificationMap.get(item.classification) + '  |  备注：' + item.notes)
+                  Text(new intl.DateTimeFormat('zh-CN',
+                    { weekday: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(item.payTime)))
+                    .fontSize($r('sys.float.ohos_id_text_size_body3'))
+                    .fontColor($r('sys.color.ohos_id_color_text_hint'))
+                    .padding({ left: 10 })
+                  if (this.payAppMap.has(item.payApp)) {
+                    Text('  |  ' + this.payAppMap.get(item.payApp))
                       .fontSize($r('sys.float.ohos_id_text_size_body3'))
                       .fontColor($r('sys.color.ohos_id_color_text_hint'))
-                      .layoutWeight(1)
-                      .padding({ left: 5 })
-                  } else {
-                    Text(new intl.DateTimeFormat('zh-CN',
-                      { timeStyle: 'short', hourCycle: 'h24' }).format(new Date(item.payTime)) + '  |  ' +
-                    item.classification)
+                  }
+                  if (item.notes.trim().length > 0) {
+                    Text('  |  ' + item.notes.trim())
                       .fontSize($r('sys.float.ohos_id_text_size_body3'))
                       .fontColor($r('sys.color.ohos_id_color_text_hint'))
-                      .padding({ right: 5 })
                   }
                 }
+                .padding({ top: 5 })
               }
               .justifyContent(FlexAlign.Center)
               .alignItems(HorizontalAlign.Start)
-              .margin({ left: 12, bottom: 3 })
+              .padding({ right: 50 })
               .width('100%')
             }
-            .flexShrink(1)
+            .borderRadius(12)
+            .backgroundColor($r('sys.color.ohos_id_color_list_card_bg'))
           }
-          .swipeAction({ end: this.itemEnd })
+          .height(56)
+          .padding({ left: 15, right: 15 })
+          .swipeAction({
+            end: {
+              builder: () => {
+                this.itemEnd()
+              },
+              actionAreaDistance: 56
+            }
+          })
         })
+        ListItem()
+          .height(5)
       }
-      .width('90%')
+      .width('100%')
       .height('100%')
       .margin({ top: 5 })
       .chainAnimation(true)
@@ -180,13 +245,15 @@ export struct BillsPage {
         this.insertType = -1
         this.insertPayApp = -1
         this.insertPayAccount = -1
+        this.insertPayAccountAmount = 0
         this.insertClassification = -1
         this.insertTime = new Date()
         this.dateString = this.datefmt.format(this.insertTime)
         this.timeString = this.timefmt.format(this.insertTime)
         this.insertNotes = ''
         this.isPingzhang = false
-      }
+      },
+      preferType: SheetType.CENTER
     })
   }
 
@@ -195,67 +262,113 @@ export struct BillsPage {
     Column() {
       Column() {
         Row() {
-          Text('账单分类：')
-          Flex({ direction: FlexDirection.Row, wrap: FlexWrap.Wrap }) {
+          List() {
+            ListItem() {
+              Text('账单分类')
+            }
+
             ForEach(this.classificationList, (item: Classification) => {
-              Row() {
-                Radio({
-                  value: item.name,
-                  group: "classification"
-                })
-                  .onChange((isChecked: boolean) => {
-                    if (isChecked) {
-                      this.insertClassification = item.id
-                    }
+              ListItem() {
+                Row() {
+                  Radio({
+                    value: item.name,
+                    group: "classification"
                   })
-                Text(item.name)
+                    .onChange((isChecked: boolean) => {
+                      if (isChecked) {
+                        this.insertClassification = item.id
+                      }
+                    })
+                  Text(item.name)
+                }
+                .margin({ right: 5 })
               }
-              .margin({ right: 5 })
             })
           }
-        }
+          .height('100%')
+          .layoutWeight(1)
 
-        Row() {
-          Text('收支方式：')
-          Flex({ direction: FlexDirection.Row, wrap: FlexWrap.Wrap }) {
+          Divider()
+            .vertical(true)
+          List() {
+            ListItem() {
+              Text('收支方式')
+            }
+
             ForEach(this.payAppList, (item: PayApp) => {
-              Row() {
-                Radio({
-                  value: item.name,
-                  group: "payApp"
-                })
-                  .onChange((isChecked: boolean) => {
-                    if (isChecked) {
-                      this.insertPayApp = item.id
-                    }
+              ListItem() {
+                Row() {
+                  Radio({
+                    value: item.name,
+                    group: "payApp"
                   })
-                Text(item.name)
+                    .onChange((isChecked: boolean) => {
+                      if (isChecked) {
+                        this.insertPayApp = item.id
+                      }
+                    })
+                  Text(item.name)
+                }
+                .margin({ right: 5 })
               }
-              .margin({ right: 5 })
             })
           }
+          .height('100%')
+          .layoutWeight(1)
+          .padding({ left: 5 })
+
+          Divider()
+            .vertical(true)
+          List() {
+            ListItem() {
+              Text('收支账户')
+            }
+
+            ForEach(this.payAccountList, (item: PayAccount) => {
+              ListItem() {
+                Row() {
+                  Radio({
+                    value: item.name,
+                    group: "payAccount"
+                  })
+                    .onChange((isChecked: boolean) => {
+                      if (isChecked) {
+                        this.insertPayAccount = item.id
+                        this.insertPayAccountAmount = item.amount
+                      }
+                    })
+                  Text(item.name + '(' + item.amount + '元)')
+                }
+                .margin({ right: 5 })
+              }
+            })
+          }
+          .height('100%')
+          .layoutWeight(2)
+          .padding({ left: 5 })
         }
+        .height('70%')
 
         Row() {
-          Text('收支账户：')
-          Flex({ direction: FlexDirection.Row, wrap: FlexWrap.Wrap }) {
-            ForEach(this.payAccountList, (item: PayAccount) => {
-              Row() {
-                Radio({
-                  value: item.name,
-                  group: "payAccount"
-                })
-                  .onChange((isChecked: boolean) => {
-                    if (isChecked) {
-                      this.insertPayAccount = item.id
-                    }
-                  })
-                Text(item.name + '(' + item.amount + '元)')
+          TextInput({ placeholder: '请输入备注……', text: $$this.insertNotes })
+            .maxLength(32)
+            .showCounter(true)
+            .cancelButton({})
+            .onEditChange(() => {
+              try {
+                promptAction.showToast({
+                  message: this.insertNotes,
+                  duration: 2000
+                });
+              } catch (error) {
+                let message = (error as BusinessError).message
+                let code = (error as BusinessError).code
+                hilog.error(0x0000, 'billsPage', `showToast args error code is ${code}, message is ${message}`)
               }
-              .margin({ right: 5 })
             })
-          }
         }
+        .padding({ top: 5, bottom: 5 })
+        .height('20%')
 
         Row() {
           Text('日期：')
@@ -286,26 +399,8 @@ export struct BillsPage {
         }
         .width('100%')
         .padding({ top: 5, bottom: 5 })
+        .height('10%')
 
-        Row() {
-          TextInput({ placeholder: '请输入备注……', text: $$this.insertNotes })
-            .maxLength(32)
-            .showCounter(true)
-            .cancelButton({})
-            .onEditChange(() => {
-              try {
-                promptAction.showToast({
-                  message: this.insertNotes,
-                  duration: 2000
-                });
-              } catch (error) {
-                let message = (error as BusinessError).message
-                let code = (error as BusinessError).code
-                hilog.error(0x0000, 'billsPage', `showToast args error code is ${code}, message is ${message}`)
-              }
-            })
-        }
-        .padding({ top: 5, bottom: 5 })
       }
       .height('60%')
       .width('90%')
@@ -481,6 +576,11 @@ export struct BillsPage {
                   message: '请选择收支类型',
                   duration: 2000
                 })
+              } else if (this.insertClassification <= 0) {
+                promptAction.showToast({
+                  message: '请选择账单类别',
+                  duration: 2000
+                })
               } else {
                 let bill: Bills =
                   new Bills(0, parseFloat(this.insertCost), this.insertType, this.insertPayApp, this.insertPayAccount,
@@ -501,7 +601,13 @@ export struct BillsPage {
                   DAY: bill.day,
                   NOTES: bill.notes
                 }
-                let count = await taskpool.execute(insertBill, getContext(this), valuesBucket)
+                let newAmount: number = 0
+                if (bill.type == 0) {
+                  newAmount = this.insertPayAccountAmount - bill.cost
+                } else if (bill.type == 1) {
+                  newAmount = this.insertPayAccountAmount + bill.cost
+                }
+                let count = await taskpool.execute(insertBill, getContext(this), valuesBucket, newAmount)
                 this.billsList =
                   await taskpool.execute(queryBill, getContext(this), this.searchYear, this.searchMonth) as Array<Bills>
                 promptAction.showToast({
@@ -517,53 +623,4 @@ export struct BillsPage {
       .layoutWeight(1)
     }
   }
-}
-
-@Concurrent
-async function insertBill(context: Context, valueBucket: BillsValueBucket) {
-  const storeConfig: relationalStore.StoreConfig = {
-    name: 'bills.db',
-    securityLevel: relationalStore.SecurityLevel.S4,
-    encrypt: true,
-    customDir: 'bill',
-    allowRebuild: true
-  }
-  let count: number = 0
-  let store: relationalStore.RdbStore = await relationalStore.getRdbStore(context, storeConfig)
-  hilog.info(0x0000, 'billsPage', 'get insert rdb success')
-  count = store.insertSync('BILLS', valueBucket)
-  return count
-}
-
-@Concurrent
-async function queryBill(context: Context, queryYear: number, queryMonth: number) {
-  const storeConfig: relationalStore.StoreConfig = {
-    name: 'bills.db',
-    securityLevel: relationalStore.SecurityLevel.S4,
-    encrypt: true,
-    customDir: 'bill',
-    allowRebuild: true
-  }
-  let store: relationalStore.RdbStore = await relationalStore.getRdbStore(context, storeConfig)
-  let predicate: relationalStore.RdbPredicates = new relationalStore.RdbPredicates('BILLS')
-  predicate.equalTo('YEAR', queryYear).equalTo('MONTH', queryMonth).orderByDesc('PAY_TIME')
-  let billsResultSet = store.querySync(predicate)
-  let billsList: Array<Bills> = new Array()
-  while (billsResultSet.goToNextRow()) {
-    billsList.push(new Bills(billsResultSet.getLong(billsResultSet.getColumnIndex("ID")),
-      billsResultSet.getDouble(billsResultSet.getColumnIndex("COST")),
-      billsResultSet.getLong(billsResultSet.getColumnIndex("TYPE")),
-      billsResultSet.getLong(billsResultSet.getColumnIndex("PAY_APP")),
-      billsResultSet.getLong(billsResultSet.getColumnIndex("PAY_ACCOUNT")),
-      billsResultSet.getLong(billsResultSet.getColumnIndex("CLASSIFICATION")),
-      billsResultSet.getString(billsResultSet.getColumnIndex("CREATE_TIME")),
-      billsResultSet.getString(billsResultSet.getColumnIndex("PAY_TIME")),
-      billsResultSet.getLong(billsResultSet.getColumnIndex("YEAR")),
-      billsResultSet.getLong(billsResultSet.getColumnIndex("MONTH")),
-      billsResultSet.getLong(billsResultSet.getColumnIndex("DATE")),
-      billsResultSet.getLong(billsResultSet.getColumnIndex("DAY")),
-      billsResultSet.getString(billsResultSet.getColumnIndex("NOTES"))));
-    hilog.info(0x0000, 'testTag', `time = ${billsResultSet.getDouble(billsResultSet.getColumnIndex("COST"))}`);
-  }
-  return billsList
 }

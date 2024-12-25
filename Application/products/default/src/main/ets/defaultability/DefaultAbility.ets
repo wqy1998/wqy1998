@@ -2,16 +2,20 @@ import { abilityAccessCtrl, AbilityConstant, PermissionRequestResult, UIAbility,
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { window } from '@kit.ArkUI';
 import { relationalStore } from '@kit.ArkData';
-import { ArrayList } from '@kit.ArkTS';
-import PayApp from '@livingbills/bills/src/main/ets/model/PayApp';
-import Bills from '@livingbills/bills/src/main/ets/model/Bills';
-import Classification from '@livingbills/bills/src/main/ets/model/Classification';
-import PayAccount from '@livingbills/bills/src/main/ets/model/PayAccount';
+import { ArrayList, buffer } from '@kit.ArkTS';
+import PayApp from '@livingbills/rdbcrud/src/main/ets/model/PayApp';
+import Bills from '@livingbills/rdbcrud/src/main/ets/model/Bills';
+import Classification from '@livingbills/rdbcrud/src/main/ets/model/Classification';
+import PayAccount from '@livingbills/rdbcrud/src/main/ets/model/PayAccount';
+import auth from '@hw-agconnect/auth';
 
 let rdb: relationalStore.RdbStore | undefined = undefined
 
 export default class EntryAbility extends UIAbility {
   onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
+    let file = this.context.resourceManager.getRawFileContentSync('agconnect-services.json');
+    let json: string = buffer.from(file.buffer).toString();
+    auth.init(this.context, json);
     let AtManager = abilityAccessCtrl.createAtManager();
     AtManager.requestPermissionsFromUser(this.context, ['ohos.permission.READ_MEDIA', 'ohos.permission.MEDIA_LOCATION'])
       .then((data: PermissionRequestResult) => {
@@ -87,9 +91,9 @@ export default class EntryAbility extends UIAbility {
       const firstBill: relationalStore.ValuesBucket = {
         COST: 20.5,
         TYPE: 1,
-        PAY_APP: 0,
-        PAY_ACCOUNT: 0,
-        CLASSIFICATION: 0,
+        PAY_APP: 1,
+        PAY_ACCOUNT: 1,
+        CLASSIFICATION: 1,
         CREATE_TIME: new Date().toString(),
         PAY_TIME: new Date().toString(),
         YEAR: new Date().getFullYear(),
@@ -168,7 +172,30 @@ export default class EntryAbility extends UIAbility {
     billsPredicates.equalTo("YEAR", year).equalTo("MONTH", month).orderByDesc("PAY_TIME")
     let billsResultSet = rdb.querySync(billsPredicates);
     let billsList: Array<Bills> = new Array()
+    let currentMonthExpense: number = 0
+    let currentMonthIncome: number = 0
+    let currentDayExpense: number = 0
+    let currentDayIncome: number = 0
     while (billsResultSet.goToNextRow()) {
+      if (billsResultSet.getLong(billsResultSet.getColumnIndex("YEAR")) == year &&
+        billsResultSet.getLong(billsResultSet.getColumnIndex("MONTH")) == month) {
+        if (billsResultSet.getLong(billsResultSet.getColumnIndex("TYPE")) == 0) {
+          currentMonthExpense = currentMonthExpense + billsResultSet.getDouble(billsResultSet.getColumnIndex("COST"))
+        }
+        if (billsResultSet.getLong(billsResultSet.getColumnIndex("TYPE")) == 1) {
+          currentMonthIncome = currentMonthIncome + billsResultSet.getDouble(billsResultSet.getColumnIndex("COST"))
+        }
+      }
+      if (billsResultSet.getLong(billsResultSet.getColumnIndex("YEAR")) == year &&
+        billsResultSet.getLong(billsResultSet.getColumnIndex("MONTH")) == month &&
+        billsResultSet.getLong(billsResultSet.getColumnIndex("DATE")) == date) {
+        if (billsResultSet.getLong(billsResultSet.getColumnIndex("TYPE")) == 0) {
+          currentDayExpense = currentDayExpense + billsResultSet.getDouble(billsResultSet.getColumnIndex("COST"))
+        }
+        if (billsResultSet.getLong(billsResultSet.getColumnIndex("TYPE")) == 1) {
+          currentDayIncome = currentDayIncome + billsResultSet.getDouble(billsResultSet.getColumnIndex("COST"))
+        }
+      }
       billsList.push(new Bills(billsResultSet.getLong(billsResultSet.getColumnIndex("ID")),
         billsResultSet.getDouble(billsResultSet.getColumnIndex("COST")),
         billsResultSet.getLong(billsResultSet.getColumnIndex("TYPE")),
@@ -184,7 +211,11 @@ export default class EntryAbility extends UIAbility {
         billsResultSet.getString(billsResultSet.getColumnIndex("NOTES"))));
       hilog.info(0x0000, 'testTag', `time = ${billsResultSet.getDouble(billsResultSet.getColumnIndex("COST"))}`);
     }
-    AppStorage.setOrCreate("billsList", billsList);
+    AppStorage.setOrCreate("billsList", billsList)
+    AppStorage.setOrCreate("currentMonthExpense", currentMonthExpense)
+    AppStorage.setOrCreate("currentMonthIncome", currentMonthIncome)
+    AppStorage.setOrCreate("currentDayExpense", currentDayExpense)
+    AppStorage.setOrCreate("currentDayIncome", currentDayIncome)
 
     // 查询分类表
     let classificationPredicates = new relationalStore.RdbPredicates("CLASSIFICATION");

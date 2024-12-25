@@ -7,6 +7,9 @@
   "main": "",
   "version": "1.0.0",
   "dependencies": {
-    "@livingbills/bills": "file:../../features/bills"
+    "@livingbills/bills": "file:../../features/bills",
+    "@livingbills/mine": "file:../../features/mine/",
+    "@livingbills/rdbcrud": "file:../../commons/rdbCRUD",
+    "@hw-agconnect/auth": "^1.0.2"
   }
 }

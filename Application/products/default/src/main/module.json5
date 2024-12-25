@@ -5,7 +5,9 @@
     "description": "$string:module_desc",
     "mainElement": "DefaultAbility",
     "deviceTypes": [
-      "phone"
+      "default",
+      "tablet",
+      "2in1"
     ],
     "deliveryWithInstall": true,
     "installationFree": false,
@@ -15,8 +17,6 @@
         "name": "DefaultAbility",
         "srcEntry": "./ets/defaultability/DefaultAbility.ets",
         "description": "$string:defaultability_desc",
-//        "icon": "$media:layered_image",
-//        "label": "$string:defaultability_label",
         "startWindowIcon": "$media:startIcon",
         "startWindowBackground": "$color:white",
         "exported": true,
@@ -32,11 +32,16 @@
         ]
       }
     ],
+    "metadata": [
+      {
+        "name": "client_id",
+        "value": "112798449"
+      }
+    ],
     "requestPermissions": [
       {
         "name": "ohos.permission.INTERNET"
       }
-    ],
-//    "appStartup": "$profile:startup_config"
+    ]
   }
 }

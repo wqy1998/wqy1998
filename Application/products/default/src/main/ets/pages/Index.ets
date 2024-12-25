@@ -1,10 +1,11 @@
 import { router } from '@kit.ArkUI';
-import PayApp from '@livingbills/bills/src/main/ets/model/PayApp';
+import PayApp from '@livingbills/rdbcrud/src/main/ets/model/PayApp';
 import { ArrayList } from '@kit.ArkTS';
-import PayAccount from '@livingbills/bills/src/main/ets/model/PayAccount';
-import Classification from '@livingbills/bills/src/main/ets/model/Classification';
+import PayAccount from '@livingbills/rdbcrud/src/main/ets/model/PayAccount';
+import Classification from '@livingbills/rdbcrud/src/main/ets/model/Classification';
 import { SymbolGlyphModifier } from '@kit.ArkUI';
 import { BillsPage } from '@livingbills/bills';
+import { MinePage } from '@livingbills/mine';
 
 @Entry
 @Component
@@ -52,21 +53,18 @@ struct Index {
       .tabBar(new BottomTabBarStyle({
         normal: new SymbolGlyphModifier($r('sys.symbol.yuansign_coupon_fill'))
       }, '账单'))
+      .expandSafeArea([SafeAreaType.SYSTEM],[SafeAreaEdge.TOP])
 
       TabContent() {
-
+        MinePage()
       }
-      .tabBar(new BottomTabBarStyle({
-        normal: new SymbolGlyphModifier($r('sys.symbol.yuansign_circle_and_hand_fill'))
-      }, '统计'))
-
-      TabContent() {
-
-      }
+      .backgroundColor($r('sys.color.ohos_id_color_sub_background'))
       .tabBar(new BottomTabBarStyle({
         normal: new SymbolGlyphModifier($r('sys.symbol.person_crop_circle_fill_1'))
       }, '我的'))
+      .expandSafeArea([SafeAreaType.SYSTEM],[SafeAreaEdge.TOP])
     }
     .barBackgroundBlurStyle(BlurStyle.COMPONENT_ULTRA_THIN)
+    .expandSafeArea([SafeAreaType.SYSTEM],[SafeAreaEdge.TOP])
   }
 }

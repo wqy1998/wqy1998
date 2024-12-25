@@ -1,11 +1,10 @@
 {
-  "name": "@livingbills/bills",
+  "name": "@livingbills/rdbcrud",
   "version": "1.0.0",
   "description": "Please describe the basic information.",
   "main": "Index.ets",
   "author": "",
   "license": "Apache-2.0",
-  "dependencies": {
-    "@livingbills/rdbcrud": "file:../../commons/rdbCRUD"
-  }
+  "packageType": "InterfaceHar",
+  "dependencies": {}
 }

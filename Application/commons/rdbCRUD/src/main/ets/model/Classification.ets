@@ -1,4 +1,5 @@
-export default class PayAccount {
+@Sendable
+export default class Classification {
   private _id: number
 
   public get id(): number {
@@ -15,16 +16,6 @@ export default class PayAccount {
     return this._name
   }
 
-  private _amount: number
-
-  public set amount(value: number) {
-    this._amount = value
-  }
-
-  public get amount(): number {
-    return this._amount
-  }
-
   private _createTime: string
 
   public set createTime(value: string) {
@@ -35,10 +26,9 @@ export default class PayAccount {
     return this._createTime
   }
 
-  constructor(id: number, name: string, amount: number, createTime: string) {
+  constructor(id: number, name: string, createTime: string) {
     this._id = id
     this._name = name
-    this._amount = amount
     this._createTime = createTime
   }
 }
