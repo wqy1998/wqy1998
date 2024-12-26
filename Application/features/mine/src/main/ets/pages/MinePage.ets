@@ -1,16 +1,27 @@
 import { FunctionalButton, functionalButtonComponentManager } from "@kit.ScenarioFusionKit";
 import { hilog } from "@kit.PerformanceAnalysisKit";
-import PayAccount from "../model/PayAccount";
-import { loginComponentManager, LoginWithHuaweiIDButton } from "@kit.AccountKit";
+import { authentication, loginComponentManager, LoginWithHuaweiIDButton } from "@kit.AccountKit";
 import { BusinessError } from "@kit.BasicServicesKit";
+import PayAccount from "@livingbills/rdbcrud/src/main/ets/model/PayAccount";
+import { util } from "@kit.ArkTS";
+import { preferences } from "@kit.ArkData";
 
 @Component
 export struct MinePage {
   @State isLogin: boolean = false
-  @State userName: string = '登录 / 注册';
+  @State userName: string = '';
+  @State phoneNumber: string = ''
+  @State verifyCode: string = ''
+  @State password: string = ''
   @State url: ResourceStr = $r('app.media.person_crop_circle_fill_1')
+  @State showBindSheet: boolean = false
   @StorageLink("payAccountList") payAccountList: Array<PayAccount> = new Array<PayAccount>()
   @StorageLink("payAccountMap") payAccountMap: Map<number, string[]> = new Map()
+
+  dealAllError(error: BusinessError): void {
+    hilog.error(0x0000, 'testTag', `Failed to auth. Code: ${error.code}, message: ${error.message}`);
+  }
+
   // 构造LoginWithHuaweiIDButton组件的控制器
   controller: loginComponentManager.LoginWithHuaweiIDButtonController =
     new loginComponentManager.LoginWithHuaweiIDButtonController()
@@ -28,21 +39,63 @@ export struct MinePage {
           const unionID = response.unionID;
           const idToken = response.idToken;
           // 开发者处理authCode、openID、unionID、idToken
+          AppStorage.setOrCreate('authCode',authCode)
+          AppStorage.setOrCreate('openID',openID)
+          AppStorage.setOrCreate('unionID',unionID)
+          AppStorage.setOrCreate('idToken',idToken)
+          // 创建授权请求，并设置参数
+          const authRequest = new authentication.HuaweiIDProvider().createAuthorizationWithHuaweiIDRequest();
+          // 获取头像昵称需要传如下scope
+          authRequest.scopes = ['profile'];
+          // 若开发者需要进行服务端开发，则需传如下permission获取authorizationCode
+          authRequest.permissions = ['serviceauthcode'];
+          // 用户是否需要登录授权，该值为true且用户未登录或未授权时，会拉起用户登录或授权页面
+          authRequest.forceAuthorization = true;
+          // 用于防跨站点请求伪造
+          authRequest.state = util.generateRandomUUID();
+          try {
+            const controller = new authentication.AuthenticationController(getContext(this));
+            controller.executeRequest(authRequest).then((data) => {
+              const authorizationWithHuaweiIDResponse = data as authentication.AuthorizationWithHuaweiIDResponse;
+              const state = authorizationWithHuaweiIDResponse.state;
+              if (state !== undefined && authRequest.state !== state) {
+                hilog.error(0x0000, 'testTag', `Failed to authorize. The state is different, response state: ${state}`);
+                return;
+              }
+              hilog.info(0x0000, 'testTag', 'Succeeded in authentication.');
+              const authorizationWithHuaweiIDCredential = authorizationWithHuaweiIDResponse.data!;
+              const avatarUri = authorizationWithHuaweiIDCredential.avatarUri;
+              const nickName = authorizationWithHuaweiIDCredential.nickName;
+              const unionID = authorizationWithHuaweiIDCredential.unionID;
+              const openID = authorizationWithHuaweiIDCredential.openID;
+              const authorizationCode = authorizationWithHuaweiIDCredential.authorizationCode;
+              // 开发者处理avatarUri, nickName, unionID，openID，authorizationCode
+              preferences.getPreferencesSync(getContext(this),{name:'user'})
+              this.userName = nickName!
+            }).catch((err: BusinessError) => {
+              this.dealAllError(err);
+            });
+          } catch (error) {
+            this.dealAllError(error);
+          }
         }
       });
 
   build() {
     Navigation() {
       List({ space: 10 }) {
-        ListItemGroup({ style: ListItemGroupStyle.CARD }) {
-          ListItem({ style: ListItemStyle.CARD }) {
-            Row() {
-              this.avatar()
-              Text(this.userName)
+        if (this.isLogin) {
+          ListItemGroup({ style: ListItemGroupStyle.CARD }) {
+            ListItem({ style: ListItemStyle.CARD }) {
+              Row() {
+                this.avatar()
+                Text(this.userName)
+              }
+              .justifyContent(FlexAlign.Start)
+              .width('100%')
             }
-            .justifyContent(FlexAlign.Start)
-            .width('100%')
           }
+        } else {
           ListItem() {
             this.login()
           }
@@ -57,11 +110,13 @@ export struct MinePage {
                 Text(item.amount.toString() + '元')
                   .fontSize(16)
                 Blank()
-                Button({ buttonStyle: ButtonStyleMode.TEXTUAL }) {
+                Button({ buttonStyle: ButtonStyleMode.NORMAL, type: ButtonType.Circle }) {
                   Text() {
                     SymbolSpan($r('sys.symbol.chevron_right'))
                   }
+                  .fontColor($r('sys.color.ohos_id_color_text_primary'))
                   .fontSize(16)
+                  .padding(5)
                 }
                 .stateEffect(false)
               }
@@ -93,9 +148,7 @@ export struct MinePage {
               style: loginComponentManager.Style.BUTTON_RED,
               // 账号登录按钮在登录过程中展示加载态
               extraStyle: {
-                buttonStyle: new loginComponentManager.ButtonStyle().loadingStyle({
-                  show: true
-                })
+                buttonStyle: new loginComponentManager.ButtonStyle().loadingStyle({ show: true })
               },
               // LoginWithHuaweiIDButton的边框圆角半径
               borderRadius: 24,
@@ -110,13 +163,16 @@ export struct MinePage {
           })
         }
         .height(40)
-      }.width('100%')
+      }
+      .width('100%')
     }
     .justifyContent(FlexAlign.Center)
     // .constraintSize({ minHeight: '100%' })
     .margin({
       left: 16,
-      right: 16
+      right: 16,
+      top: 5,
+      bottom: 5
     })
   }
 
@@ -127,7 +183,7 @@ export struct MinePage {
         .fontSize(20)
         .fontWeight(FontWeight.Medium)
       Blank()
-      Button({ buttonStyle: ButtonStyleMode.NORMAL,type:ButtonType.Circle}) {
+      Button({ buttonStyle: ButtonStyleMode.NORMAL, type: ButtonType.Circle }) {
         Text() {
           SymbolSpan($r('sys.symbol.plus'))
         }

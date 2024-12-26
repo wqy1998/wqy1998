@@ -1,7 +1,7 @@
 import { abilityAccessCtrl, AbilityConstant, PermissionRequestResult, UIAbility, Want } from '@kit.AbilityKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { window } from '@kit.ArkUI';
-import { relationalStore } from '@kit.ArkData';
+import { preferences, relationalStore } from '@kit.ArkData';
 import { ArrayList, buffer } from '@kit.ArkTS';
 import PayApp from '@livingbills/rdbcrud/src/main/ets/model/PayApp';
 import Bills from '@livingbills/rdbcrud/src/main/ets/model/Bills';
@@ -9,7 +9,7 @@ import Classification from '@livingbills/rdbcrud/src/main/ets/model/Classificati
 import PayAccount from '@livingbills/rdbcrud/src/main/ets/model/PayAccount';
 import auth from '@hw-agconnect/auth';
 
-let rdb: relationalStore.RdbStore | undefined = undefined
+let userPreferences: preferences.Preferences | null = null
 
 export default class EntryAbility extends UIAbility {
   onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
@@ -37,6 +37,10 @@ export default class EntryAbility extends UIAbility {
   onWindowStageCreate(windowStage: window.WindowStage): void {
     // Main window is created, set main page for this ability
     hilog.info(0x0000, 'testTag', '%{public}s', 'Ability onWindowStageCreate');
+    let options: preferences.Options = {
+      name: 'user'
+    }
+    preferences.getPreferencesSync(this.context, options)
     windowStage.loadContent('pages/Index', (err, data) => {
       if (err.code) {
         hilog.error(0x0000, 'testTag', 'Failed to load the content. Cause: %{public}s', JSON.stringify(err) ?? '');
@@ -71,7 +75,7 @@ export default class EntryAbility extends UIAbility {
       customDir: 'bill',
       allowRebuild: true
     }
-    rdb = await relationalStore.getRdbStore(this.context, storeConfig)
+    let rdb = await relationalStore.getRdbStore(this.context, storeConfig)
     hilog.info(0x0000, 'testTag', `Go to createTable().`);
 
     const SQL_CREATE_BILLS =
