@@ -5,13 +5,13 @@
         "name": "default",
         "type": "HarmonyOS",
         "material": {
-          "storePassword": "0000001A5548493E187464527AA033105345B5397F19F10BFB32488DC223766D48DAF68179B1EF8B6850",
-          "certpath": "D:/workspace/hmnext/LivingBills/key/LivingBills_debug.cer",
+          "storePassword": "0000001AE9A91ABDB0CEBFAF4B0434C63032861418F87DCDDEE45C490652D2BB028944657D0D95686658",
+          "certpath": "D:/WorkSpace/DevEcoStudioProjects/livingbills/Application/key/LivingBills_debug.cer",
           "keyAlias": "LivingBills_debug",
-          "keyPassword": "0000001A44655617E475B8A93B470EC9170CC30348164B69119913312D43048C27F10410C73A2CE5D891",
-          "profile": "D:/workspace/hmnext/LivingBills/key/LivingBills_debugDebug.p7b",
+          "keyPassword": "0000001A922D060CB6869EFB98C2D9CC04311AEDF2CE5EB1A46E58B19B3FF34BD2D12778A54F60EFBFCC",
+          "profile": "D:/WorkSpace/DevEcoStudioProjects/livingbills/Application/key/LivingBills_debugDebug.p7b",
           "signAlg": "SHA256withECDSA",
-          "storeFile": "D:/workspace/hmnext/LivingBills/key/LivingBills_debug.p12"
+          "storeFile": "D:/WorkSpace/DevEcoStudioProjects/livingbills/Application/key/LivingBills_debug.p12"
         }
       }
     ],

@@ -1,8 +1,4 @@
 import { router } from '@kit.ArkUI';
-import PayApp from '@livingbills/rdbcrud/src/main/ets/model/PayApp';
-import { ArrayList } from '@kit.ArkTS';
-import PayAccount from '@livingbills/rdbcrud/src/main/ets/model/PayAccount';
-import Classification from '@livingbills/rdbcrud/src/main/ets/model/Classification';
 import { SymbolGlyphModifier } from '@kit.ArkUI';
 import { BillsPage } from '@livingbills/bills';
 import { MinePage } from '@livingbills/mine';
@@ -10,12 +6,6 @@ import { MinePage } from '@livingbills/mine';
 @Entry
 @Component
 struct Index {
-  @State createTime: string = ''
-  @State lastSignInTime: string = ''
-  @StorageLink("classificationList") classificationList: ArrayList<Classification> = new ArrayList<Classification>()
-  @StorageLink("payAppList") payAppList: ArrayList<PayApp> = new ArrayList<PayApp>()
-  @StorageLink("payAccountList") payAccountList: ArrayList<PayAccount> = new ArrayList<PayAccount>()
-
   @Builder
   homeButton(title: Resource, description: Resource, routeName: string) {
     Button({ type: ButtonType.Normal, stateEffect: true }) {

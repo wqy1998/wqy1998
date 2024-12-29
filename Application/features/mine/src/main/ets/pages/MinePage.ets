@@ -4,7 +4,6 @@ import { authentication, loginComponentManager, LoginWithHuaweiIDButton } from "
 import { BusinessError } from "@kit.BasicServicesKit";
 import PayAccount from "@livingbills/rdbcrud/src/main/ets/model/PayAccount";
 import { util } from "@kit.ArkTS";
-import { preferences } from "@kit.ArkData";
 
 @Component
 export struct MinePage {
@@ -13,7 +12,7 @@ export struct MinePage {
   @State phoneNumber: string = ''
   @State verifyCode: string = ''
   @State password: string = ''
-  @State url: ResourceStr = $r('app.media.person_crop_circle_fill_1')
+  @State url: ResourceStr = $r('sys.symbol.person_crop_circle_fill_1')
   @State showBindSheet: boolean = false
   @StorageLink("payAccountList") payAccountList: Array<PayAccount> = new Array<PayAccount>()
   @StorageLink("payAccountMap") payAccountMap: Map<number, string[]> = new Map()
@@ -39,10 +38,10 @@ export struct MinePage {
           const unionID = response.unionID;
           const idToken = response.idToken;
           // 开发者处理authCode、openID、unionID、idToken
-          AppStorage.setOrCreate('authCode',authCode)
-          AppStorage.setOrCreate('openID',openID)
-          AppStorage.setOrCreate('unionID',unionID)
-          AppStorage.setOrCreate('idToken',idToken)
+          AppStorage.setOrCreate('authCode', authCode)
+          AppStorage.setOrCreate('openID', openID)
+          AppStorage.setOrCreate('unionID', unionID)
+          AppStorage.setOrCreate('idToken', idToken)
           // 创建授权请求，并设置参数
           const authRequest = new authentication.HuaweiIDProvider().createAuthorizationWithHuaweiIDRequest();
           // 获取头像昵称需要传如下scope
@@ -66,12 +65,10 @@ export struct MinePage {
               const authorizationWithHuaweiIDCredential = authorizationWithHuaweiIDResponse.data!;
               const avatarUri = authorizationWithHuaweiIDCredential.avatarUri;
               const nickName = authorizationWithHuaweiIDCredential.nickName;
-              const unionID = authorizationWithHuaweiIDCredential.unionID;
-              const openID = authorizationWithHuaweiIDCredential.openID;
-              const authorizationCode = authorizationWithHuaweiIDCredential.authorizationCode;
               // 开发者处理avatarUri, nickName, unionID，openID，authorizationCode
-              preferences.getPreferencesSync(getContext(this),{name:'user'})
               this.userName = nickName!
+              this.url = avatarUri!
+              this.isLogin = true
             }).catch((err: BusinessError) => {
               this.dealAllError(err);
             });
@@ -110,15 +107,12 @@ export struct MinePage {
                 Text(item.amount.toString() + '元')
                   .fontSize(16)
                 Blank()
-                Button({ buttonStyle: ButtonStyleMode.NORMAL, type: ButtonType.Circle }) {
-                  Text() {
-                    SymbolSpan($r('sys.symbol.chevron_right'))
-                  }
-                  .fontColor($r('sys.color.ohos_id_color_text_primary'))
-                  .fontSize(16)
-                  .padding(5)
+                Text() {
+                  SymbolSpan($r('sys.symbol.chevron_right'))
                 }
-                .stateEffect(false)
+                .fontColor($r('sys.color.ohos_id_color_text_primary'))
+                .fontSize(16)
+                .padding(5)
               }
               .width('100%')
             }

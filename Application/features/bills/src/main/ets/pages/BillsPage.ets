@@ -8,7 +8,7 @@ import Classification from "@livingbills/rdbcrud/src/main/ets/model/Classificati
 import PayApp from "@livingbills/rdbcrud/src/main/ets/model/PayApp";
 import PayAccount from "@livingbills/rdbcrud/src/main/ets/model/PayAccount";
 import { taskpool } from "@kit.ArkTS";
-import { insertBill, queryBill } from "@livingbills/rdbcrud";
+import { deleteBill, insertBill, queryAccount, queryBill } from "@livingbills/rdbcrud";
 
 @Component
 export struct BillsPage {
@@ -24,9 +24,9 @@ export struct BillsPage {
   @StorageLink("currentMonthIncome") currentMonthIncome: number = 0
   @StorageLink("currentDayExpense") currentDayExpense: number = 0
   @StorageLink("currentDayIncome") currentDayIncome: number = 0
-  @StorageProp("year") searchYear: number = this.today.getFullYear()
-  @StorageProp("month") searchMonth: number = this.today.getMonth()
-  @StorageProp("date") searchDate: number = this.today.getDate()
+  @StorageProp("year") queryYear: number = this.today.getFullYear()
+  @StorageProp("month") queryMonth: number = this.today.getMonth()
+  @StorageProp("date") queryDate: number = this.today.getDate()
   @State showTime: string = new Date().getFullYear().toString()
   @State tabOptions: SegmentButtonOptions = SegmentButtonOptions.tab({
     buttons: [{ text: '日账单' }, { text: '月账单' }],
@@ -56,7 +56,7 @@ export struct BillsPage {
   private numbers: string[] = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '0', '.']
 
   @Builder
-  itemEnd() {
+  itemEnd(id: number,index:number) {
     Row() {
       Button({ buttonStyle: ButtonStyleMode.NORMAL }) {
         Text() {
@@ -69,6 +69,36 @@ export struct BillsPage {
       .type(ButtonType.Circle)
       .margin({ left: 15 })
       .backgroundColor($r('sys.color.ohos_id_color_warning'))
+      .onClick(() => {
+        AlertDialog.show({
+          title: '删除账单项',
+          message: '确定删除此账单项吗？',
+          primaryButton: {
+            value: '取消',
+            action: () => {
+            }
+          },
+          secondaryButton: {
+            value: '确定',
+            style: DialogButtonStyle.HIGHLIGHT,
+            action: async () => {
+              let count = await deleteBill(getContext(this), id)
+              if (count > 0) {
+                this.billsList.splice(index,1)
+                promptAction.showToast({
+                  message: '删除账单项成功',
+                  duration: 2000
+                })
+              } else {
+                promptAction.showToast({
+                  message: '删除账单项失败',
+                  duration: 2000
+                })
+              }
+            }
+          }
+        })
+      })
 
       Button({ buttonStyle: ButtonStyleMode.NORMAL }) {
         Text() {
@@ -137,7 +167,7 @@ export struct BillsPage {
           .margin({ left: 15, right: 15 })
         }
 
-        ForEach(this.billsList, (item: Bills) => {
+        ForEach(this.billsList, (item: Bills, index: number) => {
           ListItem() {
             Row() {
               if (item.date < 10) {
@@ -211,7 +241,7 @@ export struct BillsPage {
           .swipeAction({
             end: {
               builder: () => {
-                this.itemEnd()
+                this.itemEnd(item.id,index)
               },
               actionAreaDistance: 56
             }
@@ -226,7 +256,7 @@ export struct BillsPage {
       .chainAnimation(true)
     }
     .title({
-      main: `${this.searchYear}年${this.searchMonth + 1}月账单`,
+      main: `${this.queryYear}年${this.queryMonth + 1}月账单`,
       sub: `以日期排序`
     })
     .titleMode(NavigationTitleMode.Mini)
@@ -601,15 +631,22 @@ export struct BillsPage {
                   DAY: bill.day,
                   NOTES: bill.notes
                 }
-                let newAmount: number = 0
                 if (bill.type == 0) {
-                  newAmount = this.insertPayAccountAmount - bill.cost
+                  this.insertPayAccountAmount = this.insertPayAccountAmount - bill.cost
+                  this.currentDayExpense = this.currentDayExpense - bill.cost
+                  this.currentMonthExpense = this.currentMonthExpense - bill.cost
                 } else if (bill.type == 1) {
-                  newAmount = this.insertPayAccountAmount + bill.cost
+                  this.insertPayAccountAmount = this.insertPayAccountAmount + bill.cost
+                  this.currentDayIncome = this.currentDayIncome + bill.cost
+                  this.currentMonthIncome = this.currentMonthIncome + bill.cost
                 }
-                let count = await taskpool.execute(insertBill, getContext(this), valuesBucket, newAmount)
+                let count =
+                  await taskpool.execute(insertBill, getContext(this), valuesBucket, this.insertPayAccountAmount)
                 this.billsList =
-                  await taskpool.execute(queryBill, getContext(this), this.searchYear, this.searchMonth) as Array<Bills>
+                  await taskpool.execute(queryBill, getContext(this), this.queryYear, this.queryMonth) as Array<Bills>
+                let obj = await taskpool.execute(queryAccount, getContext(this)) as Array<object>
+                this.payAccountList = obj[0] as Array<PayAccount>
+                this.payAccountMap = obj[1] as Map<number, string[]>
                 promptAction.showToast({
                   message: (count as number) == -1 ? '增加账单项失败' : '增加账单项成功',
                   duration: 2000
