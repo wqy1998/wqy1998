@@ -9,8 +9,6 @@ import Classification from '@livingbills/rdbcrud/src/main/ets/model/Classificati
 import PayAccount from '@livingbills/rdbcrud/src/main/ets/model/PayAccount';
 import auth from '@hw-agconnect/auth';
 
-let userPreferences: preferences.Preferences | null = null
-
 export default class EntryAbility extends UIAbility {
   onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
     let file = this.context.resourceManager.getRawFileContentSync('agconnect-services.json');
@@ -37,15 +35,24 @@ export default class EntryAbility extends UIAbility {
   onWindowStageCreate(windowStage: window.WindowStage): void {
     // Main window is created, set main page for this ability
     hilog.info(0x0000, 'testTag', '%{public}s', 'Ability onWindowStageCreate');
-    let options: preferences.Options = {
-      name: 'user'
-    }
-    userPreferences = preferences.getPreferencesSync(this.context, options)
     windowStage.loadContent('pages/Index', (err, data) => {
       if (err.code) {
         hilog.error(0x0000, 'testTag', 'Failed to load the content. Cause: %{public}s', JSON.stringify(err) ?? '');
         return;
       }
+      PersistentStorage.persistProps([{
+        key: 'authCode', defaultValue: undefined
+      }, {
+        key: 'openID', defaultValue: undefined
+      }, {
+        key: 'unionID', defaultValue: undefined
+      }, {
+        key: 'idToken', defaultValue: undefined
+      }, {
+        key: 'nickName', defaultValue: undefined
+      }, {
+        key: 'avatarUri', defaultValue: $r('sys.symbol.person_2_fill')
+      }])
       hilog.info(0x0000, 'testTag', 'Succeeded in loading the content. Data: %{public}s', JSON.stringify(data) ?? '');
     });
   }

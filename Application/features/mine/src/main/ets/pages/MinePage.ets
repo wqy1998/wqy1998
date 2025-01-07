@@ -7,15 +7,18 @@ import { util } from "@kit.ArkTS";
 
 @Component
 export struct MinePage {
-  @State isLogin: boolean = false
-  @State userName: string = '';
+  @StorageLink('nickName') nickName: string | undefined = undefined
+  @StorageLink('avatarUri') avatarUri: ResourceStr = $r('sys.symbol.person_2_fill')
+  @StorageLink('authCode') authCode: string | undefined = undefined
+  @StorageLink('openID') openID: string | undefined = undefined
+  @StorageLink('unionID') unionID: string | undefined = undefined
+  @StorageLink('idToken') idToken: string | undefined = undefined
+  @StorageLink("payAccountList") payAccountList: Array<PayAccount> = new Array<PayAccount>()
+  @StorageLink("payAccountMap") payAccountMap: Map<number, string[]> = new Map()
   @State phoneNumber: string = ''
   @State verifyCode: string = ''
   @State password: string = ''
-  @State url: ResourceStr = $r('sys.symbol.person_crop_circle_fill_1')
   @State showBindSheet: boolean = false
-  @StorageLink("payAccountList") payAccountList: Array<PayAccount> = new Array<PayAccount>()
-  @StorageLink("payAccountMap") payAccountMap: Map<number, string[]> = new Map()
 
   dealAllError(error: BusinessError): void {
     hilog.error(0x0000, 'testTag', `Failed to auth. Code: ${error.code}, message: ${error.message}`);
@@ -38,10 +41,10 @@ export struct MinePage {
           const unionID = response.unionID;
           const idToken = response.idToken;
           // 开发者处理authCode、openID、unionID、idToken
-          AppStorage.setOrCreate('authCode', authCode)
-          AppStorage.setOrCreate('openID', openID)
-          AppStorage.setOrCreate('unionID', unionID)
-          AppStorage.setOrCreate('idToken', idToken)
+          this.authCode = authCode
+          this.openID = openID
+          this.unionID = unionID
+          this.idToken = idToken
           // 创建授权请求，并设置参数
           const authRequest = new authentication.HuaweiIDProvider().createAuthorizationWithHuaweiIDRequest();
           // 获取头像昵称需要传如下scope
@@ -66,9 +69,10 @@ export struct MinePage {
               const avatarUri = authorizationWithHuaweiIDCredential.avatarUri;
               const nickName = authorizationWithHuaweiIDCredential.nickName;
               // 开发者处理avatarUri, nickName, unionID，openID，authorizationCode
-              this.userName = nickName!
-              this.url = avatarUri!
-              this.isLogin = true
+              if(avatarUri!==undefined) {
+                this.avatarUri = avatarUri
+              }
+              this.nickName = nickName
             }).catch((err: BusinessError) => {
               this.dealAllError(err);
             });
@@ -81,12 +85,16 @@ export struct MinePage {
   build() {
     Navigation() {
       List({ space: 10 }) {
-        if (this.isLogin) {
+        if (this.unionID !== undefined) {
           ListItemGroup({ style: ListItemGroupStyle.CARD }) {
             ListItem({ style: ListItemStyle.CARD }) {
               Row() {
                 this.avatar()
-                Text(this.userName)
+                if (this.nickName !== undefined) {
+                  Text(this.nickName)
+                } else {
+                  Text('请设置用户名')
+                }
               }
               .justifyContent(FlexAlign.Start)
               .width('100%')
@@ -203,7 +211,7 @@ export struct MinePage {
           styleConfig: new functionalButtonComponentManager.ButtonConfig()
             .type(ButtonType.Circle)
             .stateEffect(false)
-            .backgroundImage(this.url)
+            .backgroundImage(this.avatarUri)
             .backgroundImageSize(ImageSize.Cover)
             .width(40)
             .height(40)
@@ -219,8 +227,8 @@ export struct MinePage {
           return;
         }
         // 成功日志处理
-        hilog.info(0x0000, "testTag", "succeeded in choosing avatar");
-        this.url = data.avatarUri!;
+        hilog.info(0x0000, "testTag", "succeeded in choosing avatar:" + data.avatarUri);
+        this.avatarUri = data.avatarUri!;
       })
     })
   }
