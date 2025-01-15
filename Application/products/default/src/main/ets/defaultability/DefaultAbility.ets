@@ -51,7 +51,7 @@ export default class EntryAbility extends UIAbility {
       }, {
         key: 'nickName', defaultValue: undefined
       }, {
-        key: 'avatarUri', defaultValue: $r('sys.symbol.person_2_fill')
+        key: 'avatarUri', defaultValue: ''
       }])
       hilog.info(0x0000, 'testTag', 'Succeeded in loading the content. Data: %{public}s', JSON.stringify(data) ?? '');
     });
